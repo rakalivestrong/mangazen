@@ -1,0 +1,6 @@
+{
+  "name": "MangaZen",
+  "description": "A premium, minimalist Manga reader powered by the MangaDex API with AI-enhanced discovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

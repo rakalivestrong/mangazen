@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: var(--color-primary);
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+}
+
+@layer base {
+  /* Light Mode (Default) */
+  :root {
+    --color-primary: #8AB800; /* Slightly darker green for contrast on white */
+    --color-canvas: #FAFAFA;
+    --color-surface: #F4F4F5;
+    --color-ink: #111827;
+  }
+
+  /* Dark Mode */
+  .dark {
+    --color-primary: #BCFF00;
+    --color-canvas: #0A0A0B;
+    --color-surface: #0F0F12;
+    --color-ink: #EDEDED;
+  }
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  @apply outline-none;
+}
+
+.dark body {
+  @apply bg-canvas text-ink;
+}
+
+/* Custom scrollbar for Geometric theme */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-canvas;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
