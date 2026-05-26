@@ -205,10 +205,8 @@ export const MangaDexService = {
     };
     const { hash, data } = chapter;
     
-    return data.map((fileName: string) => {
-      const url = `${baseUrl}/data/${hash}/${fileName}`;
-      return `/api/proxy/page?url=${encodeURIComponent(url)}`;
-    });
+    // Load images directly from MangaDex CDN — no proxy needed for <img> tags
+    return data.map((fileName: string) => `${baseUrl}/data/${hash}/${fileName}`);
   },
 
   mapMangaData(item: any): Manga {
