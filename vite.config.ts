@@ -17,11 +17,26 @@ export default defineConfig(({mode}) => {
     },
     server: {
       allowedHosts: true,
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Local dev proxy — mirrors what Vercel serverless functions do in production
+      proxy: {
+        '/api/proxy/mangadex': {
+          target: 'https://api.mangadex.org',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/proxy\/mangadex/, ''),
+        },
+        '/api/proxy/covers': {
+          target: 'https://uploads.mangadex.org/covers',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/proxy\/covers/, ''),
+        },
+        '/api/proxy/at-home': {
+          target: 'https://api.mangadex.org',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/proxy\/at-home/, '/at-home'),
+        },
+      },
     },
   };
 });
