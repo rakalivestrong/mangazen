@@ -20,18 +20,21 @@ export default function MangaDetail() {
   const [vibe, setVibe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userTags, setUserTags] = useState<string[]>([]);
+  const [communityTags, setCommunityTags] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadData() {
       if (!id) return;
       setLoading(true);
       try {
-        const [mangaData, chapterData] = await Promise.all([
+        const [mangaData, chapterData, popTags] = await Promise.all([
           MangaDexService.getMangaDetails(id),
           MangaDexService.getAllMangaChapters(id, [selectedLang]),
+          TagService.getPopularTagsForManga(id, 15)
         ]);
         setManga(mangaData);
         setChapters(chapterData);
+        setCommunityTags(popTags);
         
         const userData = await TagService.getMangaUserData(id);
         setUserTags(userData.tags);
@@ -141,14 +144,32 @@ export default function MangaDetail() {
             {/* User panel: reading status + rating + tags */}
             <UserPanel mangaId={manga.id} mangaTitle={manga.title} />
 
+            {/* Community Tags displayed as clickable pills */}
+            {communityTags.length > 0 && (
+              <div className="pt-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-2">Community Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {communityTags.map(tag => (
+                    <Link
+                      key={`com-${tag}`}
+                      to={`/tag/${encodeURIComponent(tag)}`}
+                      className="px-2.5 py-1 text-xs font-mono bg-white/5 border border-white/10 text-white/70 hover:border-white/30 hover:text-white transition-colors"
+                    >
+                      #{tag}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* User tags displayed as clickable pills */}
             {userTags.length > 0 && (
-              <div>
+              <div className="pt-2">
                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30 mb-2">My Tags</p>
                 <div className="flex flex-wrap gap-2">
                   {userTags.map(tag => (
                     <Link
-                      key={tag}
+                      key={`my-${tag}`}
                       to={`/tag/${encodeURIComponent(tag)}`}
                       className="px-2.5 py-1 text-xs font-mono bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors"
                     >
