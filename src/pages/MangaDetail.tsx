@@ -32,7 +32,9 @@ export default function MangaDetail() {
         ]);
         setManga(mangaData);
         setChapters(chapterData);
-        setUserTags(TagService.getMangaTags(id));
+        
+        const userData = await TagService.getMangaUserData(id);
+        setUserTags(userData.tags);
 
         // Jikan Fallback for metadata
         JikanService.searchMangaByTitle(mangaData.title).then(jData => {

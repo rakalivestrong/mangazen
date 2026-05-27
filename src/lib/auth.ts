@@ -1,20 +1,15 @@
-// Auth service — localStorage based authentication
+import { supabase } from './supabase';
 
 export interface User {
   id: string;
   username: string;
   email: string;
-  avatar: string;       // hex color for initials avatar (fallback)
-  avatarPhoto?: string; // base64 data URL for custom photo
+  avatar: string;
+  avatarPhoto?: string;
   bio?: string;
   createdAt: number;
 }
 
-interface StoredUser extends User {
-  passwordHash: string;
-}
-
-const USERS_KEY = 'mangazen_users';
 const SESSION_KEY = 'mangazen_session';
 
 function simpleHash(str: string): string {
@@ -27,10 +22,6 @@ function simpleHash(str: string): string {
   return Math.abs(hash).toString(36);
 }
 
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
 function getAvatarColor(username: string): string {
   const colors = [
     '#BCFF00', '#FF6B6B', '#4ECDC4', '#45B7D1',
@@ -41,62 +32,64 @@ function getAvatarColor(username: string): string {
   return colors[hash % colors.length];
 }
 
-function getAllUsers(): Record<string, StoredUser> {
-  const data = localStorage.getItem(USERS_KEY);
-  return data ? JSON.parse(data) : {};
-}
-
-function saveUsers(users: Record<string, StoredUser>) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function syncSession(user: StoredUser) {
-  const { passwordHash: _, ...publicUser } = user;
+function syncSession(publicUser: User) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(publicUser));
-  return publicUser as User;
+  return publicUser;
 }
 
 export const AuthService = {
-  register(username: string, email: string, password: string): { success: boolean; error?: string; user?: User } {
-    const users = getAllUsers();
-
-    const emailExists = Object.values(users).some(u => u.email.toLowerCase() === email.toLowerCase());
-    if (emailExists) return { success: false, error: 'Email sudah digunakan.' };
-
-    const usernameExists = Object.values(users).some(
-      u => u.username.toLowerCase() === username.toLowerCase()
-    );
-    if (usernameExists) return { success: false, error: 'Username sudah digunakan.' };
-
+  async register(username: string, email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> {
     if (username.length < 3) return { success: false, error: 'Username minimal 3 karakter.' };
     if (password.length < 6) return { success: false, error: 'Password minimal 6 karakter.' };
 
-    const user: StoredUser = {
-      id: generateId(),
+    const lowerEmail = email.toLowerCase();
+    
+    // Check if email or username exists
+    const { data: existing } = await supabase
+      .from('users')
+      .select('email, username')
+      .or(`email.eq.${lowerEmail},username.ilike.${username}`);
+      
+    if (existing && existing.length > 0) {
+      if (existing.some(u => u.email === lowerEmail)) return { success: false, error: 'Email sudah digunakan.' };
+      if (existing.some(u => u.username.toLowerCase() === username.toLowerCase())) return { success: false, error: 'Username sudah digunakan.' };
+    }
+
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    
+    const user = {
+      id,
       username,
-      email: email.toLowerCase(),
+      email: lowerEmail,
       avatar: getAvatarColor(username),
       createdAt: Date.now(),
-      passwordHash: simpleHash(password + email),
+      passwordHash: simpleHash(password + lowerEmail),
     };
 
-    users[user.id] = user;
-    saveUsers(users);
-    return { success: true, user: syncSession(user) };
+    const { error } = await supabase.from('users').insert([user]);
+    
+    if (error) return { success: false, error: error.message };
+
+    const { passwordHash: _, ...publicUser } = user;
+    return { success: true, user: syncSession(publicUser as User) };
   },
 
-  login(email: string, password: string): { success: boolean; error?: string; user?: User } {
-    const users = getAllUsers();
-    const storedUser = Object.values(users).find(
-      u => u.email.toLowerCase() === email.toLowerCase()
-    );
+  async login(email: string, password: string): Promise<{ success: boolean; error?: string; user?: User }> {
+    const lowerEmail = email.toLowerCase();
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', lowerEmail)
+      .single();
 
-    if (!storedUser) return { success: false, error: 'Email tidak terdaftar.' };
+    if (error || !data) return { success: false, error: 'Email tidak terdaftar.' };
 
-    const hash = simpleHash(password + storedUser.email);
-    if (hash !== storedUser.passwordHash) return { success: false, error: 'Password salah.' };
+    const hash = simpleHash(password + lowerEmail);
+    if (hash !== data.passwordHash) return { success: false, error: 'Password salah.' };
 
-    return { success: true, user: syncSession(storedUser) };
+    const { passwordHash: _, ...publicUser } = data;
+    return { success: true, user: syncSession(publicUser as User) };
   },
 
   logout() {
@@ -112,58 +105,87 @@ export const AuthService = {
     return !!this.getCurrentUser();
   },
 
-  // Update profile photo (base64 data URL)
-  updateAvatarPhoto(userId: string, dataUrl: string): User | null {
-    const users = getAllUsers();
-    if (!users[userId]) return null;
-    users[userId].avatarPhoto = dataUrl;
-    saveUsers(users);
-    return syncSession(users[userId]);
+  async updateAvatarPhoto(userId: string, dataUrl: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ avatarPhoto: dataUrl })
+      .eq('id', userId)
+      .select()
+      .single();
+      
+    if (error || !data) return null;
+    const { passwordHash: _, ...publicUser } = data;
+    return syncSession(publicUser as User);
   },
 
-  // Remove custom photo (revert to initials)
-  removeAvatarPhoto(userId: string): User | null {
-    const users = getAllUsers();
-    if (!users[userId]) return null;
-    delete users[userId].avatarPhoto;
-    saveUsers(users);
-    return syncSession(users[userId]);
+  async removeAvatarPhoto(userId: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ avatarPhoto: null })
+      .eq('id', userId)
+      .select()
+      .single();
+      
+    if (error || !data) return null;
+    const { passwordHash: _, ...publicUser } = data;
+    return syncSession(publicUser as User);
   },
 
-  // Update bio
-  updateBio(userId: string, bio: string): User | null {
-    const users = getAllUsers();
-    if (!users[userId]) return null;
-    users[userId].bio = bio.trim();
-    saveUsers(users);
-    return syncSession(users[userId]);
+  async updateBio(userId: string, bio: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ bio: bio.trim() })
+      .eq('id', userId)
+      .select()
+      .single();
+      
+    if (error || !data) return null;
+    const { passwordHash: _, ...publicUser } = data;
+    return syncSession(publicUser as User);
   },
 
-  // Update username (must be unique)
-  updateUsername(userId: string, username: string): { success: boolean; error?: string; user?: User } {
+  async updateUsername(userId: string, username: string): Promise<{ success: boolean; error?: string; user?: User }> {
     if (username.length < 3) return { success: false, error: 'Username minimal 3 karakter.' };
-    const users = getAllUsers();
-    const taken = Object.values(users).some(
-      u => u.id !== userId && u.username.toLowerCase() === username.toLowerCase()
-    );
-    if (taken) return { success: false, error: 'Username sudah digunakan.' };
-    users[userId].username = username;
-    saveUsers(users);
-    return { success: true, user: syncSession(users[userId]) };
+    
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .ilike('username', username)
+      .neq('id', userId);
+      
+    if (existing && existing.length > 0) return { success: false, error: 'Username sudah digunakan.' };
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ username })
+      .eq('id', userId)
+      .select()
+      .single();
+      
+    if (error || !data) return { success: false, error: 'Gagal update username.' };
+    
+    const { passwordHash: _, ...publicUser } = data;
+    return { success: true, user: syncSession(publicUser as User) };
   },
 
-  getAllUsersPublic(): User[] {
-    const users = getAllUsers();
-    return Object.values(users).map(u => {
-      const { passwordHash: _, ...publicUser } = u;
-      return publicUser as User;
-    });
+  async getAllUsersPublic(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, avatar, avatarPhoto, bio, createdAt')
+      .order('createdAt', { ascending: false });
+      
+    if (error || !data) return [];
+    return data as User[];
   },
   
-  getUserById(userId: string): User | null {
-    const users = getAllUsers();
-    if (!users[userId]) return null;
-    const { passwordHash: _, ...publicUser } = users[userId];
-    return publicUser as User;
+  async getUserById(userId: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, username, email, avatar, avatarPhoto, bio, createdAt')
+      .eq('id', userId)
+      .single();
+      
+    if (error || !data) return null;
+    return data as User;
   }
 };

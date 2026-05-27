@@ -76,12 +76,20 @@ export function UserPanel({ mangaId, mangaTitle }: Props) {
   const tagPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const data = TagService.getMangaUserData(mangaId);
-    setStatus(data.status);
-    setRating(data.rating);
-    setUserTags(data.tags);
-    setAllUserTags(TagService.getAllUserTags());
-    setPopularTags(TagService.getPopularTagsForManga(mangaId));
+    let mounted = true;
+    Promise.all([
+      TagService.getMangaUserData(mangaId),
+      TagService.getAllUserTags(),
+      TagService.getPopularTagsForManga(mangaId)
+    ]).then(([data, allTags, popular]) => {
+      if (!mounted) return;
+      setStatus(data.status);
+      setRating(data.rating);
+      setUserTags(data.tags);
+      setAllUserTags(allTags);
+      setPopularTags(popular);
+    });
+    return () => { mounted = false; };
   }, [mangaId]);
 
   // Close tag panel on outside click
@@ -95,29 +103,33 @@ export function UserPanel({ mangaId, mangaTitle }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleStatusChange = (s: ReadingStatus) => {
+  const handleStatusChange = async (s: ReadingStatus) => {
     const next = status === s ? null : s;
     setStatus(next);
-    TagService.setStatus(mangaId, next);
+    await TagService.setStatus(mangaId, next);
   };
 
-  const handleRatingChange = (r: number) => {
+  const handleRatingChange = async (r: number) => {
     setRating(r);
-    TagService.setRating(mangaId, r);
+    await TagService.setRating(mangaId, r);
   };
 
-  const addTag = (tag: string) => {
-    const updated = TagService.addTag(mangaId, tag);
+  const addTag = async (tag: string) => {
+    const updated = await TagService.addTag(mangaId, tag);
     setUserTags(updated);
-    setAllUserTags(TagService.getAllUserTags());
-    setPopularTags(TagService.getPopularTagsForManga(mangaId));
+    const [all, pop] = await Promise.all([
+      TagService.getAllUserTags(),
+      TagService.getPopularTagsForManga(mangaId)
+    ]);
+    setAllUserTags(all);
+    setPopularTags(pop);
     setTagInput('');
   };
 
-  const removeTag = (tag: string) => {
-    const updated = TagService.removeTag(mangaId, tag);
+  const removeTag = async (tag: string) => {
+    const updated = await TagService.removeTag(mangaId, tag);
     setUserTags(updated);
-    setAllUserTags(TagService.getAllUserTags());
+    setAllUserTags(await TagService.getAllUserTags());
   };
 
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

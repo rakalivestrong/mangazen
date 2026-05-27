@@ -3,14 +3,14 @@ import { AuthService, User } from '../lib/auth';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  register: (username: string, email: string, password: string) => { success: boolean; error?: string };
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isLoggedIn: boolean;
-  updateAvatarPhoto: (dataUrl: string) => void;
-  removeAvatarPhoto: () => void;
-  updateBio: (bio: string) => void;
-  updateUsername: (username: string) => { success: boolean; error?: string };
+  updateAvatarPhoto: (dataUrl: string) => Promise<void>;
+  removeAvatarPhoto: () => Promise<void>;
+  updateBio: (bio: string) => Promise<void>;
+  updateUsername: (username: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,14 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(AuthService.getCurrentUser());
   }, []);
 
-  const login = (email: string, password: string) => {
-    const result = AuthService.login(email, password);
+  const login = async (email: string, password: string) => {
+    const result = await AuthService.login(email, password);
     if (result.success && result.user) setUser(result.user);
     return { success: result.success, error: result.error };
   };
 
-  const register = (username: string, email: string, password: string) => {
-    const result = AuthService.register(username, email, password);
+  const register = async (username: string, email: string, password: string) => {
+    const result = await AuthService.register(username, email, password);
     if (result.success && result.user) setUser(result.user);
     return { success: result.success, error: result.error };
   };
@@ -39,27 +39,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateAvatarPhoto = (dataUrl: string) => {
+  const updateAvatarPhoto = async (dataUrl: string) => {
     if (!user) return;
-    const updated = AuthService.updateAvatarPhoto(user.id, dataUrl);
+    const updated = await AuthService.updateAvatarPhoto(user.id, dataUrl);
     if (updated) setUser(updated);
   };
 
-  const removeAvatarPhoto = () => {
+  const removeAvatarPhoto = async () => {
     if (!user) return;
-    const updated = AuthService.removeAvatarPhoto(user.id);
+    const updated = await AuthService.removeAvatarPhoto(user.id);
     if (updated) setUser(updated);
   };
 
-  const updateBio = (bio: string) => {
+  const updateBio = async (bio: string) => {
     if (!user) return;
-    const updated = AuthService.updateBio(user.id, bio);
+    const updated = await AuthService.updateBio(user.id, bio);
     if (updated) setUser(updated);
   };
 
-  const updateUsername = (username: string) => {
+  const updateUsername = async (username: string) => {
     if (!user) return { success: false, error: 'Not logged in' };
-    const result = AuthService.updateUsername(user.id, username);
+    const result = await AuthService.updateUsername(user.id, username);
     if (result.success && result.user) setUser(result.user);
     return { success: result.success, error: result.error };
   };

@@ -10,9 +10,13 @@ export default function PublicProfile() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     if (id) {
-      setUser(AuthService.getUserById(id));
+      AuthService.getUserById(id).then(u => {
+        if (mounted) setUser(u);
+      });
     }
+    return () => { mounted = false; };
   }, [id]);
 
   if (!user) {

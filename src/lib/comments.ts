@@ -1,79 +1,98 @@
-// Comments service — localStorage based, per chapter
+import { supabase } from './supabase';
+import { AuthService } from './auth';
 
 export interface Comment {
   id: string;
-  chapterId: string;
+  chapterId: string; // we'll map this to manga_id in DB
   userId: string;
   username: string;
   avatarColor: string;
+  avatarPhoto?: string;
   content: string;
   createdAt: number;
-}
-
-const COMMENTS_KEY = 'mangazen_comments';
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function getAllComments(): Record<string, Comment[]> {
-  const data = localStorage.getItem(COMMENTS_KEY);
-  return data ? JSON.parse(data) : {};
-}
-
-function saveAllComments(all: Record<string, Comment[]>) {
-  localStorage.setItem(COMMENTS_KEY, JSON.stringify(all));
+  likes: number;
 }
 
 export const CommentService = {
-  getComments(chapterId: string): Comment[] {
-    const all = getAllComments();
-    return (all[chapterId] || []).sort((a, b) => b.createdAt - a.createdAt);
+  async getComments(chapterId: string): Promise<Comment[]> {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        manga_id,
+        user_id,
+        content,
+        created_at,
+        likes,
+        users ( username, avatar, "avatarPhoto" )
+      `)
+      .eq('manga_id', chapterId)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+
+    return data.map((c: any) => ({
+      id: c.id,
+      chapterId: c.manga_id,
+      userId: c.user_id,
+      content: c.content,
+      createdAt: c.created_at,
+      likes: c.likes || 0,
+      username: c.users?.username || 'Unknown',
+      avatarColor: c.users?.avatar || '#333',
+      avatarPhoto: c.users?.avatarPhoto,
+    }));
   },
 
-  addComment(
-    chapterId: string,
-    userId: string,
-    username: string,
-    avatarColor: string,
-    content: string
-  ): Comment {
-    const all = getAllComments();
-    if (!all[chapterId]) all[chapterId] = [];
+  async addComment(chapterId: string, content: string): Promise<Comment | null> {
+    const user = AuthService.getCurrentUser();
+    if (!user) return null;
 
-    const comment: Comment = {
-      id: generateId(),
-      chapterId,
-      userId,
-      username,
-      avatarColor,
+    const newComment = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+      manga_id: chapterId,
+      user_id: user.id,
       content: content.trim(),
-      createdAt: Date.now(),
+      created_at: Date.now(),
+      likes: 0
     };
 
-    all[chapterId].unshift(comment);
-    saveAllComments(all);
-    return comment;
+    const { error } = await supabase.from('comments').insert([newComment]);
+    if (error) return null;
+
+    return {
+      id: newComment.id,
+      chapterId: newComment.manga_id,
+      userId: newComment.user_id,
+      content: newComment.content,
+      createdAt: newComment.created_at,
+      likes: newComment.likes,
+      username: user.username,
+      avatarColor: user.avatar,
+      avatarPhoto: user.avatarPhoto,
+    };
   },
 
-  deleteComment(chapterId: string, commentId: string, userId: string): boolean {
-    const all = getAllComments();
-    if (!all[chapterId]) return false;
+  async deleteComment(commentId: string): Promise<boolean> {
+    const user = AuthService.getCurrentUser();
+    if (!user) return false;
 
-    const before = all[chapterId].length;
-    all[chapterId] = all[chapterId].filter(
-      c => !(c.id === commentId && c.userId === userId)
-    );
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', user.id);
 
-    if (all[chapterId].length < before) {
-      saveAllComments(all);
-      return true;
-    }
-    return false;
+    return !error;
   },
 
-  getTotalCommentCount(chapterId: string): number {
-    const all = getAllComments();
-    return (all[chapterId] || []).length;
+  async getTotalCommentCount(chapterId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('manga_id', chapterId);
+      
+    if (error) return 0;
+    return count || 0;
   },
 };

@@ -28,7 +28,11 @@ export function CommentSection({ chapterId }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setComments(CommentService.getComments(chapterId));
+    let mounted = true;
+    CommentService.getComments(chapterId).then(data => {
+      if (mounted) setComments(data);
+    });
+    return () => { mounted = false; };
   }, [chapterId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,22 +42,21 @@ export function CommentSection({ chapterId }: Props) {
 
     await new Promise(r => setTimeout(r, 200));
 
-    const newComment = CommentService.addComment(
+    const newComment = await CommentService.addComment(
       chapterId,
-      user.id,
-      user.username,
-      user.avatar,
       text
     );
 
-    setComments(prev => [newComment, ...prev]);
+    if (newComment) {
+      setComments(prev => [newComment, ...prev]);
+    }
     setText('');
     setSubmitting(false);
   };
 
-  const handleDelete = (commentId: string) => {
+  const handleDelete = async (commentId: string) => {
     if (!user) return;
-    const ok = CommentService.deleteComment(chapterId, commentId, user.id);
+    const ok = await CommentService.deleteComment(commentId);
     if (ok) setComments(prev => prev.filter(c => c.id !== commentId));
   };
 
@@ -140,10 +143,14 @@ export function CommentSection({ chapterId }: Props) {
               >
                 {/* Avatar */}
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-black font-black text-sm"
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-black font-black text-sm overflow-hidden"
                   style={{ backgroundColor: comment.avatarColor }}
                 >
-                  {comment.username[0].toUpperCase()}
+                  {comment.avatarPhoto ? (
+                    <img src={comment.avatarPhoto} alt={comment.username} className="w-full h-full object-cover" />
+                  ) : (
+                    comment.username[0].toUpperCase()
+                  )}
                 </div>
 
                 <div className="flex-1 bg-white/[0.03] border border-white/5 px-4 py-3 group-hover:border-white/10 transition-colors">

@@ -28,7 +28,7 @@ export default function AuthPage() {
     setError('');
     setLoading(true);
     await new Promise(r => setTimeout(r, 400)); // fake async feel
-    const result = login(siEmail, siPassword);
+    const result = await login(siEmail, siPassword);
     setLoading(false);
     if (result.success) {
       navigate('/');
@@ -42,7 +42,7 @@ export default function AuthPage() {
     setError('');
     setLoading(true);
     await new Promise(r => setTimeout(r, 400));
-    const result = register(suUsername, suEmail, suPassword);
+    const result = await register(suUsername, suEmail, suPassword);
     setLoading(false);
     if (result.success) {
       navigate('/');
@@ -282,7 +282,7 @@ export default function AuthPage() {
           </AnimatePresence>
 
           <p className="text-center text-[9px] text-white/20 mt-8 font-mono uppercase tracking-widest">
-            Data disimpan secara lokal di browser lo
+            Data Anda disimpan aman di Cloud Database
           </p>
         </div>
       </motion.div>

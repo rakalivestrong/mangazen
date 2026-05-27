@@ -10,7 +10,11 @@ export default function UserSearch() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    setUsers(AuthService.getAllUsersPublic());
+    let mounted = true;
+    AuthService.getAllUsersPublic().then(data => {
+      if (mounted) setUsers(data);
+    });
+    return () => { mounted = false; };
   }, []);
 
   const filteredUsers = users.filter(u => 

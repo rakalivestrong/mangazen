@@ -14,17 +14,20 @@ export default function TagPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Related tags in the global store
-  const relatedTags = TagService.getTopTags(10)
-    .filter(({ tag }) => tag !== decoded)
-    .slice(0, 8);
+  const [relatedTags, setRelatedTags] = useState<{ tag: string; count: number }[]>([]);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setNotFound(false);
 
-      const mangaIds = TagService.getMangasByTag(decoded);
+      const [mangaIds, topTags] = await Promise.all([
+        TagService.getMangasByTag(decoded),
+        TagService.getTopTags(10)
+      ]);
+      
+      setRelatedTags(topTags.filter(({ tag }) => tag !== decoded).slice(0, 8));
+
       if (mangaIds.length === 0) {
         setNotFound(true);
         setLoading(false);

@@ -79,8 +79,13 @@ export default function ProfilePage() {
         .sort((a, b) => b.addedAt - a.addedAt);
 
       // New tag system — reading status
-      // Collect all mangaIds with statuses
-      const allTagData = getAllStatusMangas();
+      const library = await TagService.getUserLibrary(user.id);
+      const allTagData = { reading: [] as string[], already_read: [] as string[], want_to_read: [] as string[] };
+      for (const item of library) {
+        if (item.status === 'reading') allTagData.reading.push(item.mangaId);
+        else if (item.status === 'already_read') allTagData.already_read.push(item.mangaId);
+        else if (item.status === 'want_to_read') allTagData.want_to_read.push(item.mangaId);
+      }
 
       // Fetch manga details for each status group (limit 12 each)
       const [readingDetails, alreadyDetails, wantDetails] = await Promise.all([
@@ -94,8 +99,8 @@ export default function ProfilePage() {
       setWantMangas(wantDetails);
 
       // Tags
-      const topTags = TagService.getTopTags(50);
-      setUserTags(topTags);
+      const userTagsList = await TagService.getUserTags(user.id);
+      setUserTags(userTagsList.slice(0, 50));
     } catch (e) {
       console.error('Profile load error:', e);
     } finally {
@@ -103,19 +108,6 @@ export default function ProfilePage() {
     }
   }
 
-  function getAllStatusMangas() {
-    // Read from the tag status storage directly
-    const data = localStorage.getItem('mangazen_read_status');
-    if (!data) return { reading: [], already_read: [], want_to_read: [] };
-    const store: Record<string, string> = JSON.parse(data);
-    const result = { reading: [] as string[], already_read: [] as string[], want_to_read: [] as string[] };
-    for (const [mangaId, status] of Object.entries(store)) {
-      if (status === 'reading') result.reading.push(mangaId);
-      else if (status === 'already_read') result.already_read.push(mangaId);
-      else if (status === 'want_to_read') result.want_to_read.push(mangaId);
-    }
-    return result;
-  }
 
   async function fetchMangaDetails(ids: string[]): Promise<Manga[]> {
     if (!ids.length) return [];
@@ -134,9 +126,9 @@ export default function ProfilePage() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
-      updateAvatarPhoto(dataUrl);
+      await updateAvatarPhoto(dataUrl);
     };
     reader.readAsDataURL(file);
   };
@@ -148,8 +140,8 @@ export default function ProfilePage() {
     setEditingUsername(true);
   };
 
-  const saveUsername = () => {
-    const result = updateUsername(usernameInput.trim());
+  const saveUsername = async () => {
+    const result = await updateUsername(usernameInput.trim());
     if (!result.success) {
       setEditError(result.error || 'Gagal update username');
     } else {
@@ -165,8 +157,8 @@ export default function ProfilePage() {
     setEditingBio(true);
   };
 
-  const saveBio = () => {
-    updateBio(bioInput);
+  const saveBio = async () => {
+    await updateBio(bioInput);
     setEditingBio(false);
     setEditError('');
   };
