@@ -10,6 +10,8 @@ import ReaderPage from './pages/ReaderPage';
 import AuthPage from './pages/AuthPage';
 import TagPage from './pages/TagPage';
 import ProfilePage from './pages/ProfilePage';
+import UserSearch from './pages/UserSearch';
+import PublicProfile from './pages/PublicProfile';
 import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
@@ -38,7 +40,10 @@ function MainLayout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/manga/:id" element={<MangaDetail />} />
+          <Route path="/library" element={<ProfilePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/users" element={<UserSearch />} />
+          <Route path="/user/:id" element={<PublicProfile />} />
           <Route path="/tag/:tagName" element={<TagPage />} />
         </Routes>
       </main>

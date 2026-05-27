@@ -271,6 +271,12 @@ export default function ReaderPage() {
               className="w-full h-auto select-none transition-all duration-700"
               loading={index < 3 ? "eager" : "lazy"}
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (!target.src.includes('wsrv.nl')) {
+                  target.src = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+                }
+              }}
             />
             <div className="absolute top-4 left-4 bg-primary text-black px-2 py-0.5 text-[8px] font-mono font-black opacity-0 group-hover:opacity-100 transition-opacity">
               FRAGMENT_{index + 1}

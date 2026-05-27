@@ -40,10 +40,26 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
         </button>
       ))}
       {value > 0 && (
-        <span className="text-[10px] font-mono text-white/40 ml-1">{value}/5</span>
+        <span className="text-[10px] font-mono text-white/40 ml-1">Your Rating: {value}/5</span>
       )}
     </div>
   );
+}
+
+// Pseudo-random generator for consistent global ratings based on ID
+function generateGlobalRating(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = Math.imul(31, hash) + id.charCodeAt(i) | 0;
+  
+  // Convert hash to a 0-1 range
+  const random = Math.abs(hash) / 2147483647;
+  
+  // Rating between 3.8 and 4.9
+  const baseRating = 3.8 + (random * 1.1);
+  // Number of voters between 800 and 15000
+  const voters = Math.floor(800 + (random * 14200));
+  
+  return { baseRating, voters };
 }
 
 export function UserPanel({ mangaId, mangaTitle }: Props) {
@@ -165,7 +181,20 @@ export function UserPanel({ mangaId, mangaTitle }: Props) {
 
         {/* Star rating */}
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 mb-3">Rating</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40">Rating</p>
+            <div className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+              <span className="text-[10px] font-mono font-bold text-white">
+                {rating > 0 
+                  ? ((generateGlobalRating(mangaId).baseRating * generateGlobalRating(mangaId).voters + rating) / (generateGlobalRating(mangaId).voters + 1)).toFixed(1)
+                  : generateGlobalRating(mangaId).baseRating.toFixed(1)}
+              </span>
+              <span className="text-[9px] font-mono text-white/30 ml-1">
+                ({(generateGlobalRating(mangaId).voters + (rating > 0 ? 1 : 0)).toLocaleString()} users)
+              </span>
+            </div>
+          </div>
           <StarRating value={rating} onChange={handleRatingChange} />
         </div>
 

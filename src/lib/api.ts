@@ -213,10 +213,10 @@ export const MangaDexService = {
   },
 
   async getChapterPages(chapterId: string): Promise<string[]> {
-    const response = await axios.get(`/api/proxy/at-home/server/${chapterId}`);
+    const response = await axios.get(`/api/proxy/at-home/server/${chapterId}?forcePort443=true`);
     const { baseUrl, chapter } = response.data as {
       baseUrl: string;
-      chapter: { hash: string; data: string[] };
+      chapter: { hash: string; data: string[]; dataSaver: string[] };
     };
     const { hash, data } = chapter;
     

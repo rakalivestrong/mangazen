@@ -60,9 +60,9 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* Navigation Links (desktop) */}
         <div className="items-center gap-6 text-sm font-black uppercase italic tracking-wider hidden md:flex">
           <Link to="/" className="hover:text-primary transition-colors">Releases</Link>
+          <Link to="/users" className="hover:text-primary transition-colors">Users</Link>
           {isLoggedIn && (
             <Link to="/profile" className="hover:text-primary transition-colors">My Library</Link>
           )}

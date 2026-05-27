@@ -151,4 +151,19 @@ export const AuthService = {
     saveUsers(users);
     return { success: true, user: syncSession(users[userId]) };
   },
+
+  getAllUsersPublic(): User[] {
+    const users = getAllUsers();
+    return Object.values(users).map(u => {
+      const { passwordHash: _, ...publicUser } = u;
+      return publicUser as User;
+    });
+  },
+  
+  getUserById(userId: string): User | null {
+    const users = getAllUsers();
+    if (!users[userId]) return null;
+    const { passwordHash: _, ...publicUser } = users[userId];
+    return publicUser as User;
+  }
 };
