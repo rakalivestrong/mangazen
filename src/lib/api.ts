@@ -26,7 +26,22 @@ export interface Chapter {
   mangaId: string;
   externalUrl?: string | null;
   publishAt: string;
+  language: string; // e.g. 'en', 'id'
 }
+
+export const JikanService = {
+  async searchMangaByTitle(title: string): Promise<any> {
+    try {
+      const response = await axios.get(`https://api.jikan.moe/v4/manga`, {
+        params: { q: title, limit: 1 }
+      });
+      return response.data.data[0] || null;
+    } catch (e) {
+      console.error('Jikan search failed:', e);
+      return null;
+    }
+  }
+};
 
 export const MangaDexService = {
   async searchManga(query: string, limit = 20, origin: string = 'all', offset = 0, includedTags: string[] = [], timeFilter: string = 'all-time'): Promise<Manga[]> {
@@ -136,12 +151,12 @@ export const MangaDexService = {
     return this.mapMangaData(response.data.data);
   },
 
-  async getMangaChapters(mangaId: string, offset = 0, limit = 500): Promise<{ chapters: Chapter[]; total: number }> {
+  async getMangaChapters(mangaId: string, offset = 0, limit = 500, languages: string[] = ['id', 'en']): Promise<{ chapters: Chapter[]; total: number }> {
     const response = await api.get(`/manga/${mangaId}/feed`, {
       params: {
         limit,
         offset,
-        translatedLanguage: ['id', 'en'],
+        translatedLanguage: languages,
         order: { chapter: 'desc' },
       },
     });
@@ -155,38 +170,38 @@ export const MangaDexService = {
         mangaId,
         externalUrl: item.attributes.externalUrl ?? null,
         publishAt: item.attributes.publishAt,
+        language: item.attributes.translatedLanguage,
       }));
 
     return { chapters, total: response.data.total || 0 };
   },
 
-  async getAllMangaChapters(mangaId: string): Promise<Chapter[]> {
+  async getAllMangaChapters(mangaId: string, languages: string[] = ['id', 'en']): Promise<Chapter[]> {
     let allChapters: Chapter[] = [];
     let offset = 0;
     const limit = 500;
     let total = 0;
 
     do {
-      const { chapters, total: fetchTotal } = await this.getMangaChapters(mangaId, offset, limit);
+      const { chapters, total: fetchTotal } = await this.getMangaChapters(mangaId, offset, limit, languages);
       total = fetchTotal;
       allChapters = allChapters.concat(chapters);
       offset += limit;
     } while (offset < total);
 
-    // Filter out duplicates (multiple scanlation groups uploading the same chapter)
+    // Filter out duplicates per language
     const uniqueChapters: Chapter[] = [];
     const seenChapters = new Set<string>();
 
     for (const chapter of allChapters) {
       if (chapter.chapter) {
-        // If chapter has a number, use that as unique key
-        if (!seenChapters.has(chapter.chapter)) {
-          seenChapters.add(chapter.chapter);
+        const key = `${chapter.language}-${chapter.chapter}`;
+        if (!seenChapters.has(key)) {
+          seenChapters.add(key);
           uniqueChapters.push(chapter);
         }
       } else {
-        // For oneshots/prologues with no chapter number, try to use title
-        const key = `no-chap-${chapter.title?.toLowerCase() || 'unknown'}`;
+        const key = `no-chap-${chapter.language}-${chapter.title?.toLowerCase() || 'unknown'}`;
         if (!seenChapters.has(key)) {
           seenChapters.add(key);
           uniqueChapters.push(chapter);

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MangaDexService, Manga, Chapter } from '../lib/api';
+import { MangaDexService, Manga, Chapter, JikanService } from '../lib/api';
 import { StorageService } from '../lib/storage';
 import { getMangaVibeCheck } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, ExternalLink, Search, Check } from 'lucide-react';
+import { Play, ExternalLink, Search, Globe, AlertTriangle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { UserPanel } from '../components/UserPanel';
 import { TagService } from '../lib/tags';
@@ -15,6 +15,8 @@ export default function MangaDetail() {
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLang, setSelectedLang] = useState<'id'|'en'>('id');
+  const [jikanData, setJikanData] = useState<any>(null);
   const [vibe, setVibe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userTags, setUserTags] = useState<string[]>([]);
@@ -26,13 +28,19 @@ export default function MangaDetail() {
       try {
         const [mangaData, chapterData] = await Promise.all([
           MangaDexService.getMangaDetails(id),
-          MangaDexService.getAllMangaChapters(id),
+          MangaDexService.getAllMangaChapters(id, [selectedLang]),
         ]);
         setManga(mangaData);
         setChapters(chapterData);
         setUserTags(TagService.getMangaTags(id));
 
-        const vibeData = await getMangaVibeCheck(mangaData.title, mangaData.description);
+        // Jikan Fallback for metadata
+        JikanService.searchMangaByTitle(mangaData.title).then(jData => {
+          if (jData) setJikanData(jData);
+        });
+
+        const desc = mangaData.description || (jikanData ? jikanData.synopsis : '');
+        const vibeData = await getMangaVibeCheck(mangaData.title, desc);
         setVibe(vibeData);
       } catch (error) {
         console.error('Error loading manga details:', error);
@@ -41,7 +49,7 @@ export default function MangaDetail() {
       }
     }
     loadData();
-  }, [id]);
+  }, [id, selectedLang]);
 
   const filteredChapters = chapters.filter(c =>
     c.chapter?.includes(searchQuery) ||
@@ -114,6 +122,18 @@ export default function MangaDetail() {
                 <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-black mb-1">Year</p>
                 <p className="uppercase text-sm font-bold italic">{manga.year || '—'}</p>
               </div>
+              {jikanData && (
+                <>
+                  <div className="p-4 bg-surface">
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-black mb-1">MAL Score</p>
+                    <p className="uppercase text-sm font-bold italic">{jikanData.score || 'N/A'}</p>
+                  </div>
+                  <div className="p-4 bg-surface">
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-black mb-1">Rank</p>
+                    <p className="uppercase text-sm font-bold italic">#{jikanData.rank || '—'}</p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* User panel: reading status + rating + tags */}
@@ -189,7 +209,7 @@ export default function MangaDetail() {
             {/* Description */}
             <div className="mb-16 max-w-3xl">
               <div className="prose prose-sm prose-invert italic opacity-50 text-base border-t border-white/10 pt-8">
-                <ReactMarkdown>{manga.description}</ReactMarkdown>
+                <ReactMarkdown>{manga.description || (jikanData ? jikanData.synopsis : 'No description available in primary database.')}</ReactMarkdown>
               </div>
             </div>
 
@@ -198,7 +218,23 @@ export default function MangaDetail() {
               <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/20 pb-4 gap-4">
                 <div>
                   <h2 className="text-4xl font-black uppercase italic tracking-tighter">Memory_Clusters</h2>
-                  <span className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{chapters.length} Fragments Found</span>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{chapters.length} Fragments Found</span>
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
+                      <Globe className="w-3 h-3 text-white/30" />
+                      {(['id', 'en'] as const).map(lang => (
+                        <button
+                          key={lang}
+                          onClick={() => setSelectedLang(lang)}
+                          className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${
+                            selectedLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
@@ -212,43 +248,55 @@ export default function MangaDetail() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
-                {filteredChapters.map(chapter => {
-                  const isExternal = !!chapter.externalUrl;
-                  const cls = "flex items-center justify-between p-6 bg-surface border border-white/5 hover:border-primary/50 transition-all group overflow-hidden relative";
-                  const inner = (
-                    <>
-                      <div className="absolute inset-y-0 left-0 w-0.5 bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform" />
-                      <div className="flex items-center gap-6">
-                        <span className="text-xs font-mono text-primary font-bold opacity-40 group-hover:opacity-100 transition-opacity">#{chapter.chapter}</span>
-                        <span className="uppercase tracking-widest font-bold text-xs group-hover:translate-x-1 transition-transform">
-                          {chapter.title || `Chapter ${chapter.chapter}`}
-                        </span>
-                      </div>
-                      {isExternal
-                        ? <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        : <Play className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                      }
-                    </>
-                  );
+              {chapters.length === 0 ? (
+                <div className="py-12 border border-dashed border-red-500/30 bg-red-500/5 text-center flex flex-col items-center">
+                  <AlertTriangle className="w-8 h-8 text-red-400 mb-3" />
+                  <h3 className="text-sm font-black uppercase tracking-widest text-red-400 mb-1">Chapters Unavailable</h3>
+                  <p className="text-[10px] font-mono text-white/40 max-w-md">
+                    No chapters found for Language: {selectedLang.toUpperCase()} in the primary database. 
+                    Fallback fetching to external aggregators (Comick/MangaReader) is currently restricted due to provider WAF blocking. 
+                    Try switching language or check back later.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                  {filteredChapters.map(chapter => {
+                    const isExternal = !!chapter.externalUrl;
+                    const cls = "flex items-center justify-between p-6 bg-surface border border-white/5 hover:border-primary/50 transition-all group overflow-hidden relative";
+                    const inner = (
+                      <>
+                        <div className="absolute inset-y-0 left-0 w-0.5 bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform" />
+                        <div className="flex items-center gap-6">
+                          <span className="text-xs font-mono text-primary font-bold opacity-40 group-hover:opacity-100 transition-opacity">#{chapter.chapter}</span>
+                          <span className="uppercase tracking-widest font-bold text-xs group-hover:translate-x-1 transition-transform">
+                            {chapter.title || `Chapter ${chapter.chapter}`}
+                          </span>
+                        </div>
+                        {isExternal
+                          ? <ExternalLink className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                          : <Play className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        }
+                      </>
+                    );
 
-                  return isExternal ? (
-                    <a key={chapter.id} href={chapter.externalUrl!} target="_blank" rel="noopener noreferrer" className={cls}>
-                      {inner}
-                    </a>
-                  ) : (
-                    <Link key={chapter.id} to={`/read/${chapter.id}`} className={cls}>
-                      {inner}
-                    </Link>
-                  );
-                })}
+                    return isExternal ? (
+                      <a key={chapter.id} href={chapter.externalUrl!} target="_blank" rel="noopener noreferrer" className={cls}>
+                        {inner}
+                      </a>
+                    ) : (
+                      <Link key={chapter.id} to={`/read/${chapter.id}`} className={cls}>
+                        {inner}
+                      </Link>
+                    );
+                  })}
 
-                {filteredChapters.length === 0 && (
-                  <div className="col-span-1 md:col-span-2 py-10 text-center font-mono opacity-50 uppercase text-xs">
-                    NO FRAGMENTS MATCH YOUR SEARCH.
-                  </div>
-                )}
-              </div>
+                  {filteredChapters.length === 0 && chapters.length > 0 && (
+                    <div className="col-span-1 md:col-span-2 py-10 text-center font-mono opacity-50 uppercase text-xs">
+                      NO FRAGMENTS MATCH YOUR SEARCH.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
