@@ -218,10 +218,14 @@ export const MangaDexService = {
       baseUrl: string;
       chapter: { hash: string; data: string[]; dataSaver: string[] };
     };
-    const { hash, data } = chapter;
+    const { hash, data, dataSaver } = chapter;
     
+    const useDataSaver = !data || data.length === 0;
+    const images = useDataSaver ? dataSaver : data;
+    const folder = useDataSaver ? 'data-saver' : 'data';
+
     // Load images directly from MangaDex CDN — no proxy needed for <img> tags
-    return data.map((fileName: string) => `${baseUrl}/data/${hash}/${fileName}`);
+    return images.map((fileName: string) => `${baseUrl}/${folder}/${hash}/${fileName}`);
   },
 
   mapMangaData(item: any): Manga {

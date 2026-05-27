@@ -273,9 +273,27 @@ export default function ReaderPage() {
               referrerPolicy="no-referrer"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                if (!target.src.includes('wsrv.nl')) {
-                  target.src = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+                const currentSrc = target.src;
+                
+                // Stop if we've already tried the final fallback to prevent infinite loops
+                if (currentSrc.includes('wsrv.nl')) return;
+                
+                // Fallback 1: Use MangaDex's official permanent uploads proxy instead of the dynamic node
+                if (!currentSrc.includes('uploads.mangadex.org')) {
+                  const dataSplit = currentSrc.split('/data/');
+                  if (dataSplit.length > 1) {
+                    target.src = `https://uploads.mangadex.org/data/${dataSplit[1]}`;
+                    return;
+                  }
+                  const saverSplit = currentSrc.split('/data-saver/');
+                  if (saverSplit.length > 1) {
+                    target.src = `https://uploads.mangadex.org/data-saver/${saverSplit[1]}`;
+                    return;
+                  }
                 }
+                
+                // Fallback 2: If the permanent proxy also fails, try a general image proxy (wsrv.nl)
+                target.src = `https://wsrv.nl/?url=${encodeURIComponent(currentSrc)}`;
               }}
             />
             <div className="absolute top-4 left-4 bg-primary text-black px-2 py-0.5 text-[8px] font-mono font-black opacity-0 group-hover:opacity-100 transition-opacity">
