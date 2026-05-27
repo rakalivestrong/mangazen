@@ -7,9 +7,9 @@ import { Navbar } from './components/Navbar';
 import Home from './pages/Home';
 import MangaDetail from './pages/MangaDetail';
 import ReaderPage from './pages/ReaderPage';
-import Library from './pages/Library';
 import AuthPage from './pages/AuthPage';
 import TagPage from './pages/TagPage';
+import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
@@ -38,7 +38,7 @@ function MainLayout() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/manga/:id" element={<MangaDetail />} />
-          <Route path="/library" element={<Library />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/tag/:tagName" element={<TagPage />} />
         </Routes>
       </main>

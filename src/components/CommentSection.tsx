@@ -4,6 +4,7 @@ import { MessageSquare, Send, Trash2, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CommentService, Comment } from '../lib/comments';
 import { useAuth } from '../context/AuthContext';
+import { Avatar } from './Avatar';
 
 interface Props {
   chapterId: string;
@@ -73,13 +74,7 @@ export function CommentSection({ chapterId }: Props) {
       {isLoggedIn && user ? (
         <form onSubmit={handleSubmit} className="mb-8">
           <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-black font-black text-sm"
-              style={{ backgroundColor: user.avatar }}
-            >
-              {user.username[0].toUpperCase()}
-            </div>
+            <Avatar user={user} size="sm" className="mt-0.5" />
             <div className="flex-1">
               <textarea
                 value={text}
