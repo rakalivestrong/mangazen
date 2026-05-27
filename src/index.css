@@ -5,23 +5,15 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-primary: var(--color-primary);
-  --color-canvas: var(--color-canvas);
-  --color-surface: var(--color-surface);
-  --color-ink: var(--color-ink);
+  --color-primary: #BCFF00;
+  --color-canvas: #0A0A0B;
+  --color-surface: #0F0F12;
+  --color-ink: #EDEDED;
 }
 
 @layer base {
-  /* Light Mode (Default) */
+  /* Dark Mode Only — light mode dihapus */
   :root {
-    --color-primary: #8AB800; /* Slightly darker green for contrast on white */
-    --color-canvas: #FAFAFA;
-    --color-surface: #F4F4F5;
-    --color-ink: #111827;
-  }
-
-  /* Dark Mode */
-  .dark {
     --color-primary: #BCFF00;
     --color-canvas: #0A0A0B;
     --color-surface: #0F0F12;
@@ -29,33 +21,56 @@
   }
 }
 
+html {
+  color-scheme: dark;
+}
+
 body {
   @apply bg-canvas text-ink font-sans antialiased;
   -webkit-tap-highlight-color: transparent;
+  background-color: #0A0A0B;
+  color: #EDEDED;
 }
 
 * {
   @apply outline-none;
 }
 
-.dark body {
-  @apply bg-canvas text-ink;
-}
-
-/* Custom scrollbar for Geometric theme */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-canvas;
+  background: #0A0A0B;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10;
+  background: rgba(255,255,255,0.1);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary;
+  background: #BCFF00;
 }
 
+/* Auth modal backdrop */
+.auth-backdrop {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Comment fade in */
+@keyframes comment-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comment-enter {
+  animation: comment-in 0.3s ease forwards;
+}
