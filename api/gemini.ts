@@ -32,7 +32,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (!process.env.GEMINI_API_KEY) {
     return json(res, 500, {
-      error: 'GEMINI_API_KEY is not configured. Add it in Vercel Environment Variables.',
+      error: 'GEMINI_API_KEY is missing on the server. Please check Vercel Environment Variables.',
     });
   }
 
