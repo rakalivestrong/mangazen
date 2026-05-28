@@ -15,7 +15,7 @@
       "destination": "https://api.mangadex.org/at-home/server/:chapterId"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
