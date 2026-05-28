@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, LogIn, ChevronDown, User } from 'lucide-react';
+import { Search, LogIn, ChevronDown, User, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from './Avatar';
@@ -63,12 +63,12 @@ export function Navbar() {
         <div className="items-center gap-6 text-sm font-black uppercase italic tracking-wider hidden md:flex">
           <Link to="/" className="hover:text-primary transition-colors">Releases</Link>
           <Link to="/users" className="hover:text-primary transition-colors">Users</Link>
-          {isLoggedIn && (
-            <Link to="/profile" className="hover:text-primary transition-colors">My Library</Link>
-          )}
         </div>
 
         <div className="flex items-center gap-3 flex-1 md:flex-none justify-end">
+          <Link to="/users" title="Search Users" className="md:hidden text-white/40 hover:text-primary transition-colors shrink-0">
+            <Users className="w-4 h-4" />
+          </Link>
           {/* Search */}
           <form onSubmit={handleSearch} className="relative block group flex-1 max-w-[150px] md:max-w-xs">
             <input
@@ -127,14 +127,6 @@ export function Navbar() {
                     >
                       <User className="w-3.5 h-3.5" />
                       My Profile
-                    </Link>
-                    <Link
-                      to="/profile"
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-primary transition-colors border-t border-white/5"
-                    >
-                      <Search className="w-3.5 h-3.5" />
-                      My Library
                     </Link>
                   </motion.div>
                 )}
