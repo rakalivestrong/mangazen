@@ -216,7 +216,7 @@ export default function MangaDetail() {
               <span className="inline-block px-3 py-1 bg-primary text-black text-[10px] font-black uppercase italic tracking-widest mb-6">
                 MangaDex_Database_01
               </span>
-              <h1 className="text-5xl md:text-6xl lg:text-[7rem] font-black tracking-tighter uppercase italic leading-[0.85] mb-8 break-words">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[6rem] font-black tracking-tighter uppercase italic leading-[0.9] mb-6 break-words">
                 {manga.title}
               </h1>
 
@@ -251,14 +251,14 @@ export default function MangaDetail() {
                   className="bg-white/5 border-l-4 border-primary p-8 mb-12 relative overflow-hidden group"
                 >
                   <div className="absolute top-0 right-0 p-2 font-mono text-[8px] text-white/10 uppercase font-black">AI_CORE_V1</div>
-                  <div className="flex items-start gap-6">
-                    <div className="w-16 h-16 bg-primary flex items-center justify-center shrink-0">
-                      <span className="text-4xl group-hover:scale-125 transition-transform">{vibe.mood}</span>
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary flex items-center justify-center shrink-0">
+                      <span className="text-2xl sm:text-4xl group-hover:scale-125 transition-transform">{vibe.mood}</span>
                     </div>
-                    <div>
-                      <h3 className="text-[10px] uppercase tracking-[0.5em] text-primary font-black mb-3">Vibe_Protocol_Activated</h3>
-                      <p className="text-2xl md:text-3xl font-bold uppercase italic leading-tight mb-4">"{vibe.vibe}"</p>
-                      <p className="text-xs opacity-50 uppercase tracking-widest leading-relaxed line-clamp-2 md:line-clamp-none">{vibe.verdict}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-[10px] uppercase tracking-[0.5em] text-primary font-black mb-2">Vibe_Protocol_Activated</h3>
+                      <p className="text-lg sm:text-2xl md:text-3xl font-bold uppercase italic leading-tight mb-3">"{vibe.vibe}"</p>
+                      <p className="text-xs opacity-50 uppercase tracking-widest leading-relaxed line-clamp-3 md:line-clamp-none">{vibe.verdict}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -266,9 +266,9 @@ export default function MangaDetail() {
             </AnimatePresence>
 
             {/* Description */}
-            <div className="mb-16 max-w-3xl">
-              {/* Translate Button */}
-              <div className="flex items-center gap-3 mb-4">
+            <div className="mb-12 sm:mb-16 max-w-3xl">
+              {/* Translate Bar */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
                   {(['id', 'en'] as TranslateTargetLang[]).map(lang => (
                     <button
@@ -285,7 +285,7 @@ export default function MangaDetail() {
                 <button
                   onClick={handleTranslate}
                   disabled={translating}
-                  className="flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border border-primary/40 text-primary hover:bg-primary hover:text-black transition-colors disabled:opacity-50 disabled:cursor-wait rounded-full"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-primary/40 text-primary hover:bg-primary hover:text-black transition-colors disabled:opacity-50 disabled:cursor-wait rounded-full"
                 >
                   <Languages className="w-3 h-3" />
                   {translating ? 'Translating...' : 'AI Translate'}
@@ -299,34 +299,37 @@ export default function MangaDetail() {
                   </button>
                 )}
               </div>
-              <div className="prose prose-sm prose-invert italic opacity-50 text-base border-t border-white/10 pt-8">
+              <div className="prose prose-sm prose-invert italic opacity-50 text-base border-t border-white/10 pt-6">
                 <ReactMarkdown>{translatedDesc ?? (manga.description || (jikanData ? jikanData.synopsis : 'No description available in primary database.'))}</ReactMarkdown>
               </div>
             </div>
 
             {/* Chapter list */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/20 pb-4 gap-4">
-                <div>
-                  <h2 className="text-4xl font-black uppercase italic tracking-tighter">Memory_Clusters</h2>
-                  <div className="flex items-center gap-4 mt-1">
+            <div className="space-y-4">
+              {/* Chapter header: stacks on mobile */}
+              <div className="flex flex-col gap-3 border-b border-white/20 pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-2xl sm:text-4xl font-black uppercase italic tracking-tighter">Memory_Clusters</h2>
                     <span className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{chapters.length} Fragments Found</span>
-                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
-                      <Globe className="w-3 h-3 text-white/30" />
-                      {(['id', 'en', 'zh'] as const).map(lang => (
-                        <button
-                          key={lang}
-                          onClick={() => setSelectedLang(lang)}
-                          className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${
-                            selectedLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
-                          }`}
-                        >
-                          {lang}
-                        </button>
-                      ))}
-                    </div>
+                  </div>
+                  {/* Lang selector */}
+                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1 self-start">
+                    <Globe className="w-3 h-3 text-white/30 flex-shrink-0" />
+                    {(['id', 'en', 'zh'] as const).map(lang => (
+                      <button
+                        key={lang}
+                        onClick={() => setSelectedLang(lang)}
+                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors ${
+                          selectedLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
                   </div>
                 </div>
+                {/* Search — full width on mobile */}
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <input

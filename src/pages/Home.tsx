@@ -170,38 +170,41 @@ export default function Home() {
           </h1>
           
           {/* Filters */}
-          <div className="flex flex-col gap-4 mb-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex gap-2">
-                  {(['all', 'manga', 'manhwa', 'manhua'] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setOrigin(t)}
-                      className={`px-6 py-2 text-xs font-bold uppercase tracking-widest border transition-colors ${
-                        origin === t 
-                          ? 'bg-primary text-black border-primary' 
-                          : 'bg-transparent text-ink/60 border-white/10 hover:border-primary/50 hover:text-ink'
-                      }`}
-                    >
-                      {t === 'all' ? 'All' : t === 'manga' ? '🇯🇵 Manga' : t === 'manhwa' ? '🇰🇷 Manhwa' : '🇨🇳 Manhua'}
-                    </button>
-                  ))}
-                </div>
-                <button 
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-6 py-2 text-xs font-bold uppercase tracking-widest border transition-colors flex items-center gap-2 ${showFilters || selectedTags.length > 0 ? 'bg-white/10 text-white border-white/30' : 'bg-transparent text-ink/60 border-white/10 hover:border-white/30 hover:text-ink'}`}
-                >
-                  Genres {selectedTags.length > 0 && `(${selectedTags.length})`}
-                </button>
+          <div className="flex flex-col gap-3 mb-8">
+            {/* Row 1: Origin filter + Genres button */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Origin tabs — scrollable on mobile */}
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 flex-nowrap shrink-0">
+                {(['all', 'manga', 'manhwa', 'manhua'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setOrigin(t)}
+                    className={`px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest border transition-colors whitespace-nowrap flex-shrink-0 ${
+                      origin === t 
+                        ? 'bg-primary text-black border-primary' 
+                        : 'bg-transparent text-ink/60 border-white/10 hover:border-primary/50 hover:text-ink'
+                    }`}
+                  >
+                    {t === 'all' ? 'All' : t === 'manga' ? '🇯🇵 Manga' : t === 'manhwa' ? '🇰🇷 Manhwa' : '🇨🇳 Manhua'}
+                  </button>
+                ))}
               </div>
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest border transition-colors flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${showFilters || selectedTags.length > 0 ? 'bg-white/10 text-white border-white/30' : 'bg-transparent text-ink/60 border-white/10 hover:border-white/30 hover:text-ink'}`}
+              >
+                Genres {selectedTags.length > 0 && `(${selectedTags.length})`}
+              </button>
+            </div>
 
-              <div className="flex flex-wrap gap-1 bg-surface p-1 border border-white/5">
+            {/* Row 2: Time filter — scrollable on mobile */}
+            <div className="flex overflow-x-auto scrollbar-hide pb-0.5">
+              <div className="flex gap-0.5 bg-surface p-1 border border-white/5 flex-nowrap min-w-max">
                 {(['all-time', 'yearly', 'monthly', 'weekly', 'daily'] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTimeFilter(t)}
-                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap flex-shrink-0 ${
                       timeFilter === t 
                         ? 'bg-primary text-black' 
                         : 'bg-transparent text-ink/50 hover:text-ink hover:bg-white/5'
@@ -221,14 +224,14 @@ export default function Home() {
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="flex flex-wrap gap-2 pt-4 border-t border-white/5 pb-4">
+                  <div className="flex flex-wrap gap-1.5 pt-4 border-t border-white/5 pb-4">
                     {availableTags.map(tag => (
                       <button
                         key={tag.id}
                         onClick={() => setSelectedTags(prev => 
                           prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
                         )}
-                        className={`px-3 py-1 text-[10px] uppercase font-mono tracking-widest border transition-colors ${
+                        className={`px-2.5 py-1 text-[9px] sm:text-[10px] uppercase font-mono tracking-widest border transition-colors ${
                           selectedTags.includes(tag.id)
                             ? 'bg-primary/20 border-primary text-primary'
                             : 'bg-transparent border-white/10 text-ink/50 hover:border-white/30 hover:text-ink'
