@@ -1,8 +1,5 @@
-import { GoogleGenAI } from '@google/genai';
 import type { IncomingMessage, ServerResponse } from 'http';
 // API Key has been confirmed in Vercel Dashboard
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? '' });
 
 function setCors(res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,16 +23,44 @@ async function parseBody(req: IncomingMessage): Promise<any> {
   });
 }
 
+// Function to call Groq API natively
+async function callGroq(prompt: string, expectJson: boolean = false): Promise<string | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('GROQ_API_KEY is not configured in Vercel Environment Variables.');
+  
+  const payload: any = {
+    model: 'llama-3.3-70b-versatile',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3,
+  };
+
+  if (expectJson) {
+    payload.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Groq API Error:', errorText);
+    throw new Error(`Groq API Error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || null;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return json(res, 200, {});
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
-
-  if (!process.env.GEMINI_API_KEY) {
-    return json(res, 500, {
-      error: 'GEMINI_API_KEY is missing on the server. Please check Vercel Environment Variables.',
-    });
-  }
 
   const { action, text, targetLang, title, description } = await parseBody(req);
 
@@ -69,23 +94,17 @@ Text:
 ${text.trim()}`;
       }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt,
-      });
-
-      const result = response.text?.trim();
-      if (!result) return json(res, 500, { error: 'Empty response from Gemini' });
-      return json(res, 200, { result });
+      const result = await callGroq(prompt);
+      
+      if (!result) return json(res, 500, { error: 'Empty response from Groq AI' });
+      return json(res, 200, { result: result.trim() });
     }
 
     // ── VIBE CHECK ─────────────────────────────────────────────────
     if (action === 'vibe-check') {
       if (!title) return json(res, 400, { error: 'No title provided' });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: `You are a manga critic with a "fresh and cool" personality.
+      const prompt = `You are a manga critic with a "fresh and cool" personality.
 Read this manga/manhwa/manhua title and description:
 
 Title: ${title}
@@ -96,13 +115,11 @@ Give me:
 2. "mood" – exactly 3 emojis
 3. "verdict" – why someone should read this (1-2 sentences)
 
-Respond ONLY in this JSON format:
-{"vibe":"...","mood":"...","verdict":"..."}`,
-        config: { responseMimeType: 'application/json' },
-      });
+Respond ONLY in this valid JSON format:
+{"vibe":"...","mood":"...","verdict":"..."}`;
 
-      const raw = response.text?.trim();
-      if (!raw) return json(res, 500, { error: 'Empty response from Gemini' });
+      const raw = await callGroq(prompt, true);
+      if (!raw) return json(res, 500, { error: 'Empty response from Groq AI' });
       const parsed = JSON.parse(raw);
       return json(res, 200, parsed);
     }
