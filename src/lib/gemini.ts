@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-export type TranslateTargetLang = 'id' | 'en';
+export type TranslateTargetLang = 'id' | 'en' | 'pinyin';
 
 // vite.config.ts injects GEMINI_API_KEY via `define` so process.env works client-side
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? '' });
@@ -64,12 +64,24 @@ export async function translateText(
   const cacheKey = `${targetLang}:${text.slice(0, 80)}`;
   if (translateCache.has(cacheKey)) return translateCache.get(cacheKey)!;
 
-  const langLabel = targetLang === 'id' ? 'Indonesian (Bahasa Indonesia)' : 'English';
+  let prompt: string;
+
+  if (targetLang === 'pinyin') {
+    prompt = `Convert the following Chinese text (Hanzi/汉字) to Pinyin romanization with proper tone marks (e.g. nǐ hǎo, shì, wǒ ài nǐ). 
+If the text is not in Chinese, return the original text unchanged.
+Only return the Pinyin text, nothing else — no explanations, no Hanzi, no numbering.
+
+Text to convert:
+${text}`;
+  } else {
+    const langLabel = targetLang === 'id' ? 'Indonesian (Bahasa Indonesia)' : 'English';
+    prompt = `Translate the following text accurately to ${langLabel}. Only return the translated text, no explanations or extra content.\n\nText to translate:\n${text}`;
+  }
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
-      contents: `Translate the following text accurately to ${langLabel}. Only return the translated text, no explanations or extra content.\n\nText to translate:\n${text}`,
+      contents: prompt,
     });
 
     const translated = response.text?.trim() ?? text;

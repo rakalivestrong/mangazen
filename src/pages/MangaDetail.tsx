@@ -270,7 +270,7 @@ export default function MangaDetail() {
               {/* Translate Bar */}
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
-                  {(['id', 'en'] as TranslateTargetLang[]).map(lang => (
+                  {(['id', 'en', 'pinyin'] as TranslateTargetLang[]).map(lang => (
                     <button
                       key={lang}
                       onClick={() => { setTranslateLang(lang); setTranslatedDesc(null); }}
@@ -278,7 +278,7 @@ export default function MangaDetail() {
                         translateLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
                       }`}
                     >
-                      {lang === 'id' ? '🇮🇩 ID' : '🇺🇸 EN'}
+                      {lang === 'id' ? '🇮🇩 ID' : lang === 'en' ? '🇺🇸 EN' : '🔤 Pinyin'}
                     </button>
                   ))}
                 </div>
