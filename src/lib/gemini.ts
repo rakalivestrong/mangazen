@@ -60,35 +60,43 @@ export async function translateText(
   text: string,
   targetLang: TranslateTargetLang
 ): Promise<string> {
-  if (!text) return text;
-  const cacheKey = `${targetLang}:${text.slice(0, 80)}`;
+  const trimmed = text?.trim();
+  if (!trimmed) return text;
+
+  const cacheKey = `${targetLang}:${trimmed.slice(0, 100)}`;
   if (translateCache.has(cacheKey)) return translateCache.get(cacheKey)!;
 
   let prompt: string;
 
   if (targetLang === 'pinyin') {
-    prompt = `Convert the following Chinese text (Hanzi/汉字) to Pinyin romanization with proper tone marks (e.g. nǐ hǎo, shì, wǒ ài nǐ). 
-If the text is not in Chinese, return the original text unchanged.
-Only return the Pinyin text, nothing else — no explanations, no Hanzi, no numbering.
+    prompt = `You are a Mandarin Chinese Pinyin expert.
+Convert ALL Chinese characters (汉字/Hanzi) in the following text to Pinyin romanization with proper tone marks.
+- Use tone marks: ā á ǎ à, ē é ě è, ī í ǐ ì, ō ó ǒ ò, ū ú ǔ ù, ǖ ǘ ǚ ǜ
+- Example: 你好 → nǐ hǎo | 我爱你 → wǒ ài nǐ | 是 → shì
+- If there are English/Indonesian words mixed in, keep those words as-is
+- Only return the converted Pinyin text. No explanations, no original Hanzi, no brackets.
 
 Text to convert:
-${text}`;
+${trimmed}`;
   } else {
     const langLabel = targetLang === 'id' ? 'Indonesian (Bahasa Indonesia)' : 'English';
-    prompt = `Translate the following text accurately to ${langLabel}. Only return the translated text, no explanations or extra content.\n\nText to translate:\n${text}`;
+    prompt = `Translate the following text to ${langLabel}. 
+- Return ONLY the translated text, nothing else.
+- Do not add explanations, notes, or quotation marks.
+- If the text is already in ${langLabel}, still return it (do not say "already translated").
+
+Text to translate:
+${trimmed}`;
   }
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-    });
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
 
-    const translated = response.text?.trim() ?? text;
-    translateCache.set(cacheKey, translated);
-    return translated;
-  } catch (error) {
-    console.error("Gemini translation failed:", error);
-    return text; // fallback to original
-  }
+  const translated = response.text?.trim();
+  if (!translated) throw new Error('Empty response from Gemini');
+
+  translateCache.set(cacheKey, translated);
+  return translated;
 }

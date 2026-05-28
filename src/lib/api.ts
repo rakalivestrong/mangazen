@@ -11,6 +11,7 @@ export interface Manga {
   id: string;
   title: string;
   description: string;
+  rawDescriptions: Record<string, string>; // all available languages from MangaDex
   coverArt: string | null;
   bannerArt: string | null;
   status: string;
@@ -230,13 +231,16 @@ export const MangaDexService = {
   },
 
   mapMangaData(item: any): Manga {
+    const rawTitles = item.attributes.title as Record<string, string>;
+    const rawDescs = item.attributes.description as Record<string, string>;
+
     const title =
-      (item.attributes.title as Record<string, string>).en ||
-      (Object.values(item.attributes.title)[0] as string) ||
+      rawTitles.en ||
+      (Object.values(rawTitles)[0] as string) ||
       'Unknown Title';
     const description =
-      (item.attributes.description as Record<string, string>).en ||
-      (Object.values(item.attributes.description)[0] as string) ||
+      rawDescs.en ||
+      (Object.values(rawDescs)[0] as string) ||
       '';
 
     const coverArtRel = (item.relationships as any[]).find(
@@ -254,6 +258,7 @@ export const MangaDexService = {
       id: item.id,
       title,
       description,
+      rawDescriptions: rawDescs,
       coverArt,
       bannerArt,
       status: item.attributes.status,

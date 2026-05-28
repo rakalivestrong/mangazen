@@ -24,6 +24,7 @@ export default function MangaDetail() {
   const [translatedDesc, setTranslatedDesc] = useState<string | null>(null);
   const [translateLang, setTranslateLang] = useState<TranslateTargetLang>('id');
   const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
 
   // Auto-detect manhua (Chinese origin) and default to showing en chapters if zh
   useEffect(() => {
@@ -33,13 +34,37 @@ export default function MangaDetail() {
   }, [manga?.originalLanguage]);
 
   const handleTranslate = async () => {
-    const rawDesc = manga?.description || (jikanData ? jikanData.synopsis : '');
-    if (!rawDesc) return;
+    if (!manga) return;
+    setTranslateError(null);
+
+    // For pinyin or when manga is Chinese origin, prefer the raw Chinese description
+    const isChineseOrigin = manga.originalLanguage === 'zh' || manga.originalLanguage === 'zh-hk';
+    let rawDesc: string;
+    if (translateLang === 'pinyin' || isChineseOrigin) {
+      rawDesc = manga.rawDescriptions['zh']
+        || manga.rawDescriptions['zh-hk']
+        || manga.description
+        || (jikanData ? jikanData.synopsis : '');
+    } else {
+      rawDesc = manga.description || (jikanData ? jikanData.synopsis : '');
+    }
+
+    if (!rawDesc?.trim()) {
+      setTranslateError('No description text found to translate.');
+      return;
+    }
+
     setTranslating(true);
     setTranslatedDesc(null);
-    const result = await translateText(rawDesc, translateLang);
-    setTranslatedDesc(result);
-    setTranslating(false);
+    try {
+      const result = await translateText(rawDesc, translateLang);
+      setTranslatedDesc(result);
+    } catch (err: any) {
+      console.error('Translate error:', err);
+      setTranslateError('Translation failed. Check Gemini API key or try again.');
+    } finally {
+      setTranslating(false);
+    }
   };
 
   function getOriginLabel(lang?: string) {
@@ -273,7 +298,7 @@ export default function MangaDetail() {
                   {(['id', 'en', 'pinyin'] as TranslateTargetLang[]).map(lang => (
                     <button
                       key={lang}
-                      onClick={() => { setTranslateLang(lang); setTranslatedDesc(null); }}
+                      onClick={() => { setTranslateLang(lang); setTranslatedDesc(null); setTranslateError(null); }}
                       className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-colors ${
                         translateLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
                       }`}
@@ -290,9 +315,19 @@ export default function MangaDetail() {
                   <Languages className="w-3 h-3" />
                   {translating ? 'Translating...' : 'AI Translate'}
                 </button>
+                {translatedDesc && !translateError && (
+                  <span className="text-[9px] font-mono text-primary/70 uppercase tracking-widest">
+                    ✓ {translateLang === 'id' ? 'Indonesian' : translateLang === 'en' ? 'English' : 'Pinyin'}
+                  </span>
+                )}
+                {translateError && (
+                  <span className="text-[9px] font-mono text-red-400 uppercase tracking-widest flex items-center gap-1">
+                    ✗ {translateError}
+                  </span>
+                )}
                 {translatedDesc && (
                   <button
-                    onClick={() => setTranslatedDesc(null)}
+                    onClick={() => { setTranslatedDesc(null); setTranslateError(null); }}
                     className="text-[9px] font-mono text-white/30 hover:text-white/60 uppercase tracking-widest transition-colors"
                   >
                     [Reset]
