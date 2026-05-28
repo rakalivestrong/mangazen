@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+export type TranslateTargetLang = 'id' | 'en';
+
 // vite.config.ts injects GEMINI_API_KEY via `define` so process.env works client-side
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? '' });
 
@@ -48,5 +50,33 @@ export async function getMangaVibeCheck(
   } catch (error) {
     console.error("Gemini Vibe Check failed:", error);
     return FALLBACK;
+  }
+}
+
+// Simple in-memory cache to avoid translating the same text twice per session
+const translateCache = new Map<string, string>();
+
+export async function translateText(
+  text: string,
+  targetLang: TranslateTargetLang
+): Promise<string> {
+  if (!text) return text;
+  const cacheKey = `${targetLang}:${text.slice(0, 80)}`;
+  if (translateCache.has(cacheKey)) return translateCache.get(cacheKey)!;
+
+  const langLabel = targetLang === 'id' ? 'Indonesian (Bahasa Indonesia)' : 'English';
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: `Translate the following text accurately to ${langLabel}. Only return the translated text, no explanations or extra content.\n\nText to translate:\n${text}`,
+    });
+
+    const translated = response.text?.trim() ?? text;
+    translateCache.set(cacheKey, translated);
+    return translated;
+  } catch (error) {
+    console.error("Gemini translation failed:", error);
+    return text; // fallback to original
   }
 }

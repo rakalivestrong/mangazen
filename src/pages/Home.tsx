@@ -10,7 +10,7 @@ export default function Home() {
   const [trending, setTrending] = useState<Manga[]>([]);
   const [activeHero, setActiveHero] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [origin, setOrigin] = useState<'all' | 'manga' | 'manhwa'>('all');
+  const [origin, setOrigin] = useState<'all' | 'manga' | 'manhwa' | 'manhua'>('all');
   const [page, setPage] = useState(1);
   const [timeFilter, setTimeFilter] = useState<'all-time' | 'yearly' | 'monthly' | 'weekly' | 'daily'>('all-time');
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string }[]>([]);
@@ -174,7 +174,7 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex gap-2">
-                  {(['all', 'manga', 'manhwa'] as const).map((t) => (
+                  {(['all', 'manga', 'manhwa', 'manhua'] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setOrigin(t)}
@@ -184,7 +184,7 @@ export default function Home() {
                           : 'bg-transparent text-ink/60 border-white/10 hover:border-primary/50 hover:text-ink'
                       }`}
                     >
-                      {t}
+                      {t === 'all' ? 'All' : t === 'manga' ? '🇯🇵 Manga' : t === 'manhwa' ? '🇰🇷 Manhwa' : '🇨🇳 Manhua'}
                     </button>
                   ))}
                 </div>

@@ -16,6 +16,7 @@ export interface Manga {
   status: string;
   year: number | null;
   tags: string[];
+  originalLanguage?: string;
 }
 
 export interface Chapter {
@@ -45,7 +46,7 @@ export const JikanService = {
 
 export const MangaDexService = {
   async searchManga(query: string, limit = 20, origin: string = 'all', offset = 0, includedTags: string[] = [], timeFilter: string = 'all-time'): Promise<Manga[]> {
-    const originalLanguage = origin === 'manga' ? ['ja'] : origin === 'manhwa' ? ['ko'] : undefined;
+    const originalLanguage = origin === 'manga' ? ['ja'] : origin === 'manhwa' ? ['ko'] : origin === 'manhua' ? ['zh', 'zh-hk'] : undefined;
     
     let createdAtSince: string | undefined = undefined;
     if (timeFilter !== 'all-time') {
@@ -92,7 +93,7 @@ export const MangaDexService = {
   },
 
   async getLatestManga(limit = 20, origin: string = 'all', offset = 0, includedTags: string[] = [], timeFilter: string = 'all-time'): Promise<Manga[]> {
-    const originalLanguage = origin === 'manga' ? ['ja'] : origin === 'manhwa' ? ['ko'] : undefined;
+    const originalLanguage = origin === 'manga' ? ['ja'] : origin === 'manhwa' ? ['ko'] : origin === 'manhua' ? ['zh', 'zh-hk'] : undefined;
     
     let createdAtSince: string | undefined = undefined;
     if (timeFilter !== 'all-time') {
@@ -257,6 +258,7 @@ export const MangaDexService = {
       bannerArt,
       status: item.attributes.status,
       year: item.attributes.year,
+      originalLanguage: item.attributes.originalLanguage,
       tags: (item.attributes.tags as any[]).map(
         (t: any) => t.attributes.name.en as string
       ),

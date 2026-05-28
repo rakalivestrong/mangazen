@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MangaDexService, Manga, Chapter, JikanService } from '../lib/api';
 import { StorageService } from '../lib/storage';
-import { getMangaVibeCheck } from '../lib/gemini';
+import { getMangaVibeCheck, translateText, TranslateTargetLang } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, ExternalLink, Search, Globe, AlertTriangle } from 'lucide-react';
+import { Play, ExternalLink, Search, Globe, AlertTriangle, Languages } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { UserPanel } from '../components/UserPanel';
 import { TagService } from '../lib/tags';
@@ -15,12 +15,41 @@ export default function MangaDetail() {
   const [manga, setManga] = useState<Manga | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLang, setSelectedLang] = useState<'id'|'en'>('id');
+  const [selectedLang, setSelectedLang] = useState<'id'|'en'|'zh'>('id');
   const [jikanData, setJikanData] = useState<any>(null);
   const [vibe, setVibe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userTags, setUserTags] = useState<string[]>([]);
   const [communityTags, setCommunityTags] = useState<string[]>([]);
+  const [translatedDesc, setTranslatedDesc] = useState<string | null>(null);
+  const [translateLang, setTranslateLang] = useState<TranslateTargetLang>('id');
+  const [translating, setTranslating] = useState(false);
+
+  // Auto-detect manhua (Chinese origin) and default to showing en chapters if zh
+  useEffect(() => {
+    if (manga?.originalLanguage === 'zh' || manga?.originalLanguage === 'zh-hk') {
+      setSelectedLang('en');
+    }
+  }, [manga?.originalLanguage]);
+
+  const handleTranslate = async () => {
+    const rawDesc = manga?.description || (jikanData ? jikanData.synopsis : '');
+    if (!rawDesc) return;
+    setTranslating(true);
+    setTranslatedDesc(null);
+    const result = await translateText(rawDesc, translateLang);
+    setTranslatedDesc(result);
+    setTranslating(false);
+  };
+
+  function getOriginLabel(lang?: string) {
+    if (lang === 'zh' || lang === 'zh-hk') return { label: '🇨🇳 Manhua', color: 'text-red-400 border-red-400/30 bg-red-400/10' };
+    if (lang === 'ko') return { label: '🇰🇷 Manhwa', color: 'text-blue-400 border-blue-400/30 bg-blue-400/10' };
+    if (lang === 'ja') return { label: '🇯🇵 Manga', color: 'text-pink-400 border-pink-400/30 bg-pink-400/10' };
+    return null;
+  }
+
+  const originBadge = getOriginLabel(manga?.originalLanguage);
 
   useEffect(() => {
     async function loadData() {
@@ -191,6 +220,13 @@ export default function MangaDetail() {
                 {manga.title}
               </h1>
 
+              {/* Origin Badge */}
+              {originBadge && (
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase tracking-widest border rounded-full mb-6 ${originBadge.color}`}>
+                  {originBadge.label}
+                </div>
+              )}
+
               {/* Genre tags from API */}
               {manga.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-8">
@@ -231,8 +267,40 @@ export default function MangaDetail() {
 
             {/* Description */}
             <div className="mb-16 max-w-3xl">
+              {/* Translate Button */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
+                  {(['id', 'en'] as TranslateTargetLang[]).map(lang => (
+                    <button
+                      key={lang}
+                      onClick={() => { setTranslateLang(lang); setTranslatedDesc(null); }}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-colors ${
+                        translateLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
+                      }`}
+                    >
+                      {lang === 'id' ? '🇮🇩 ID' : '🇺🇸 EN'}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleTranslate}
+                  disabled={translating}
+                  className="flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border border-primary/40 text-primary hover:bg-primary hover:text-black transition-colors disabled:opacity-50 disabled:cursor-wait rounded-full"
+                >
+                  <Languages className="w-3 h-3" />
+                  {translating ? 'Translating...' : 'AI Translate'}
+                </button>
+                {translatedDesc && (
+                  <button
+                    onClick={() => setTranslatedDesc(null)}
+                    className="text-[9px] font-mono text-white/30 hover:text-white/60 uppercase tracking-widest transition-colors"
+                  >
+                    [Reset]
+                  </button>
+                )}
+              </div>
               <div className="prose prose-sm prose-invert italic opacity-50 text-base border-t border-white/10 pt-8">
-                <ReactMarkdown>{manga.description || (jikanData ? jikanData.synopsis : 'No description available in primary database.')}</ReactMarkdown>
+                <ReactMarkdown>{translatedDesc ?? (manga.description || (jikanData ? jikanData.synopsis : 'No description available in primary database.'))}</ReactMarkdown>
               </div>
             </div>
 
@@ -245,7 +313,7 @@ export default function MangaDetail() {
                     <span className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{chapters.length} Fragments Found</span>
                     <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1">
                       <Globe className="w-3 h-3 text-white/30" />
-                      {(['id', 'en'] as const).map(lang => (
+                      {(['id', 'en', 'zh'] as const).map(lang => (
                         <button
                           key={lang}
                           onClick={() => setSelectedLang(lang)}
