@@ -68,9 +68,15 @@ export default function MangaDetail() {
   };
 
   function getOriginLabel(lang?: string) {
-    if (lang === 'zh' || lang === 'zh-hk') return { label: '🇨🇳 Manhua', color: 'text-red-400 border-red-400/30 bg-red-400/10' };
-    if (lang === 'ko') return { label: '🇰🇷 Manhwa', color: 'text-blue-400 border-blue-400/30 bg-blue-400/10' };
-    if (lang === 'ja') return { label: '🇯🇵 Manga', color: 'text-pink-400 border-pink-400/30 bg-pink-400/10' };
+    if (lang === 'zh' || lang === 'zh-hk') return { 
+      flag: '🇨🇳', label: 'Manhua', color: 'text-red-400 border-red-400/30 bg-red-400/10' 
+    };
+    if (lang === 'ko') return { 
+      flag: '🇰🇷', label: 'Manhwa', color: 'text-blue-400 border-blue-400/30 bg-blue-400/10' 
+    };
+    if (lang === 'ja') return { 
+      flag: '🇯🇵', label: 'Manga', color: 'text-pink-400 border-pink-400/30 bg-pink-400/10' 
+    };
     return null;
   }
 
@@ -248,7 +254,8 @@ export default function MangaDetail() {
               {/* Origin Badge */}
               {originBadge && (
                 <div className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-black uppercase tracking-widest border rounded-full mb-6 ${originBadge.color}`}>
-                  {originBadge.label}
+                  <span className="text-sm leading-none" style={{ fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif' }}>{originBadge.flag}</span>
+                  <span>{originBadge.label}</span>
                 </div>
               )}
 
@@ -303,7 +310,22 @@ export default function MangaDetail() {
                         translateLang === lang ? 'bg-primary text-black' : 'text-white/30 hover:text-white'
                       }`}
                     >
-                      {lang === 'id' ? '🇮🇩 ID' : lang === 'en' ? '🇺🇸 EN' : '🔤 Pinyin'}
+                      {lang === 'id' ? (
+                        <span className="flex items-center gap-1">
+                          <span style={{ fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif' }}>🇮🇩</span>
+                          <span>ID</span>
+                        </span>
+                      ) : lang === 'en' ? (
+                        <span className="flex items-center gap-1">
+                          <span style={{ fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif' }}>🇺🇸</span>
+                          <span>EN</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <span>🔤</span>
+                          <span>Pinyin</span>
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>

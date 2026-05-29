@@ -165,7 +165,7 @@ export default function Home() {
               {query ? 'Search Results' : 'MOHON MAAF KEPADA SELURUH PENGGUNA KARNA WEB INI MASIH BELUM LENGKAP DI KARENAKAN INI PROJECT SOLO DEV, TAPI SAYA AKAN USAHAKAN UNTUK UPDATE SETIAP HARINYA.'}
             </span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-8 break-words">
             {query ? `Results for "${query}"` : 'Releases'}
           </h1>
           
@@ -179,13 +179,18 @@ export default function Home() {
                   <button
                     key={t}
                     onClick={() => setOrigin(t)}
-                    className={`px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest border transition-colors whitespace-nowrap flex-shrink-0 ${
+                    className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest border transition-colors whitespace-nowrap flex-shrink-0 ${
                       origin === t 
                         ? 'bg-primary text-black border-primary' 
                         : 'bg-transparent text-ink/60 border-white/10 hover:border-primary/50 hover:text-ink'
                     }`}
                   >
-                    {t === 'all' ? 'All' : t === 'manga' ? '🇯🇵 Manga' : t === 'manhwa' ? '🇰🇷 Manhwa' : '🇨🇳 Manhua'}
+                    {t !== 'all' && (
+                      <span className="text-sm leading-none" style={{ fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif' }}>
+                        {t === 'manga' ? '🇯🇵' : t === 'manhwa' ? '🇰🇷' : '🇨🇳'}
+                      </span>
+                    )}
+                    <span>{t === 'all' ? 'All' : t === 'manga' ? 'Manga' : t === 'manhwa' ? 'Manhwa' : 'Manhua'}</span>
                   </button>
                 ))}
               </div>
