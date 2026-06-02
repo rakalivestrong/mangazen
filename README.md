@@ -180,24 +180,3 @@ mangazen/
 Aplikasi sudah live di Vercel:
 
 **[→ mangazen.vercel.app](https://mangazen.vercel.app)**
-
----
-
-## 👤 Developer
-
-<div align="center">
-
-**Raka Live Strong**
-[@rakalivestrong](https://github.com/rakalivestrong)
-
-*Solo dev — dibuat dari nol dengan ❤️ dan begadang*
-
-</div>
-
----
-
-<div align="center">
-
-⭐ **Kalau project ini bermanfaat, kasih bintang ya!**
-
-</div>
