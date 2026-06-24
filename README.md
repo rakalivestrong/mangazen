@@ -179,4 +179,4 @@ mangazen/
 
 Aplikasi sudah live di Vercel:
 
-**[→ mangazen.vercel.app](https://mangazen.vercel.app)**
+**[→https://mangazen-seven.vercel.app/)**
